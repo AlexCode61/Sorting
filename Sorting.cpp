@@ -1,7 +1,7 @@
 ﻿#include <iostream>
 #include <random>
 #include <vector>
-#include <algorithm>
+#include <string>
 
 struct SortAnalisys {
     int iter_directSelection = 0;
@@ -45,7 +45,7 @@ void printMas(const std::vector<int> mas) {
 
 // Сортировка прямого выбора
 void sortDirectSelection(std::vector<int> mas) {
-    sort_analisys = {}; // Сброс статистики перед каждой сортировкой
+    sort_analisys = {};
     int length = mas.size();
 
     for (int i = 0; i < length; i++) {
@@ -54,7 +54,7 @@ void sortDirectSelection(std::vector<int> mas) {
         sort_analisys.iter_directSelection++;
         for (int j = i; j < length; j++) {
             sort_analisys.srav_Selection++;
-            if (mas[j] <= min) {
+            if (mas[j] <= min && mas[j]%3 == 0) {
                 min = mas[j];
                 index_min = j;
             }
@@ -73,94 +73,148 @@ void sortDirectInc(std::vector<int> mas) {
 
     for (int i = 1; i < length; i++) {
         sort_analisys.iter_directInc++;
-        int temp = mas[i];
-        int j = i;
-        while (j > 0 && temp < mas[j - 1]) {
-            sort_analisys.srav_Inc++;
-            mas[j] = mas[j - 1];
-            j--;
-            sort_analisys.swap_Inc++;
+        if (mas[i] % 3 == 0) 
+        {
+            int temp = mas[i];
+            int j = i;
+            while (j > 0 && temp < mas[j - 1]) {
+                sort_analisys.srav_Inc++;
+                mas[j] = mas[j - 1];
+                j--;
+                sort_analisys.swap_Inc++;
+            }
+            mas[j] = temp;
         }
-        mas[j] = temp;
     }
 }
 
 // Сортировка пузырьком
 void sortBubble(std::vector<int> mas) {
-    sort_analisys = {}; // Сброс статистики перед каждой сортировкой
+    sort_analisys = {};
     int length = mas.size();
 
     for (int i = 0; i < length - 1; i++) {
         sort_analisys.iter_Bubble++;
         for (int j = 0; j < length - i - 1; j++) {
             sort_analisys.srav_Bubble++;
-            if (mas[j] > mas[j + 1]) {
-                std::swap(mas[j], mas[j + 1]);
-                sort_analisys.swap_Bubble++;
+            if (mas[j] % 3 == 0 && mas[j + 1] % 3 == 0) 
+            {
+                if (mas[j] > mas[j + 1]) {
+                    std::swap(mas[j], mas[j + 1]);
+                    sort_analisys.swap_Bubble++;
+                }
             }
         }
     }
 }
 
-void sortQuick(std::vector<int> mas, int low, int high) {
+void sortQuick(std::vector<int>& mas, int low, int high) {
+    sort_analisys.iter_directExchange++;
     if (low < high) {
-        int pi = (low + high) / 2; // Simple pivot selection
+        int pi = -1;
+        for (int k = low; k <= high; ++k) {
+            if (mas[k] % 3 == 0) {
+                pi = k;
+                break;
+            }
+        }
+
+        if (pi == -1) {
+            return;
+        }
+
         int i = low - 1;
 
-        for (int j = low; j <= high - 1; j++) {
+        for (int j = low; j <= high; j++) {
             sort_analisys.srav_directExchange++;
-            if (mas[j] < mas[pi]) {
+            if (mas[j] % 3 == 0 && mas[j] < mas[pi]) {
                 i++;
                 std::swap(mas[i], mas[j]);
                 sort_analisys.swap_directExchange++;
             }
         }
-        std::swap(mas[i + 1], mas[high]);
-        sort_analisys.swap_directExchange++;
-        int pivotIndex = i + 1;
+        
+        int pi_index = high;
+        for (int k = low; k < high; k++) {
+            if (mas[k] % 3 != 0) {
+                pi_index = k;
+                break;
+            }
+            else {
+                pi_index = k + 1;
+            }
 
-        sortQuick(mas, low, pivotIndex - 1);
-        sortQuick(mas, pivotIndex + 1, high);
+        }
+        if (mas[high] % 3 == 0) {
+            std::swap(mas[i + 1], mas[pi]);
+            pi_index = i + 1;
+            sort_analisys.swap_directExchange++;
+        }
+
+
+
+        sortQuick(mas, low, pi_index - 1);
+        sortQuick(mas, pi_index + 1, high);
     }
 }
 
+std::string spacesIndentation(int val, int length) {
+    std::string str = std::to_string(val);
+    //std::cout << (length - str.size()) << "&" << std::endl;
+    int size = length - str.size();
+    for (int i = 0; i < size; i++) {
+        str += " ";
+       // std::cout << str <<" " <<i <<  std::endl;
+    }
+    return str;
+}
+
+void printTable(std::vector<int> mas)
+{
+    std::cout << "\n+ ------------------+--------+--------------+--------------+------------+" << std::endl;
+    std::cout << "| Метод сортировки  | Размер | Итерации     | Сравнения    | Обмены     |" << std::endl;
+    std::cout << "+-------------------+--------+--------------+--------------+------------+" << std::endl;
+    std::vector<float> percent_sortings = { 0, 0.25, 0.5, 0.75, 1 };
+    for (float percent : percent_sortings) {
+        std::vector<int> copy_mas = mas;
+        std::sort(begin(copy_mas), begin(copy_mas) + (copy_mas.size() * percent));
+        std::vector<int> masSelection = copy_mas;
+        std::vector<int> masInsertion = copy_mas;
+        std::vector<int> masBubble = copy_mas;
+        std::vector<int> masQuick = copy_mas;
+        // Сортировка выбором
+        sortDirectSelection(masSelection);
+        std::cout << "| Selection Sort    |" << spacesIndentation(mas.size(),8) << "|" << spacesIndentation(sort_analisys.iter_directSelection, 14)  << "|" << spacesIndentation(sort_analisys.srav_Selection, 14) << "|" << spacesIndentation(sort_analisys.swap_Selection,12) << "|" << std::endl;
+
+        // Сортировка вставками
+        sortDirectInc(masInsertion);
+        std::cout << "| Insertion Sort    |" << spacesIndentation(mas.size(),8) << "|" << spacesIndentation(sort_analisys.iter_directInc,14) << "|" << spacesIndentation(sort_analisys.srav_Inc,14) << "|" << spacesIndentation(sort_analisys.swap_Inc,12) << "|" << std::endl;
+
+        // Сортировка пузырьком
+        sortBubble(masBubble);
+        std::cout << "| Bubble Sort       |" << spacesIndentation(mas.size(),8) << "|" << spacesIndentation(sort_analisys.iter_Bubble,14) << "|" << spacesIndentation(sort_analisys.srav_Bubble,14) << "|" << spacesIndentation(sort_analisys.swap_Bubble,12) << "|" << std::endl;
+
+        // Быстрая сортировка
+        sort_analisys = {};
+       // sortQuick(masQuick, 0, masQuick.size() - 1);
+        //std::cout << "| Quick Sort       | " << mas.size() << "     | "<< sort_analisys.iter_directExchange <<"     | " << sort_analisys.srav_directExchange << "     | " << sort_analisys.swap_directExchange << "     | " << std::endl;
+
+        std::cout << "+-------------------+--------+--------------+--------------+------------+" << std::endl;
+    }
+}
 
 int main() {
     setlocale(LC_ALL, "RU");
     srand(time(0));
-
-    std::vector<int> sizes = { 20, 500, 1000, 3000, 5000, 10000 };
-
-    std::cout << "\n+ ------------------ + -------- + -------------- + -------------- + ------------ +" << std::endl;
-    std::cout << "| Метод сортировки  | Размер | Итерации     | Сравнения    | Обмены     |" << std::endl;
-    std::cout << "+------------------+--------+--------------+--------------+------------+" << std::endl;
-
-    for (int size : sizes) {
-        std::vector<int> original = createMassiv(size);
-        std::vector<int> masSelection = original;
-        std::vector<int> masInsertion = original;
-        std::vector<int> masBubble = original;
-        std::vector<int> masQuick = original;
-
-        // Сортировка выбором
-        sortDirectSelection(masSelection);
-        std::cout << "| Selection Sort   | " << size << "     | " << sort_analisys.iter_directSelection << "      | " << sort_analisys.srav_Selection << "     | " << sort_analisys.swap_Selection << "   |" << std::endl;
-
-        // Сортировка вставками
-        sortDirectInc(masInsertion);
-        std::cout << "| Insertion Sort   | " << size << "     | " << sort_analisys.iter_directInc << "      | " << sort_analisys.srav_Inc << "     | " << sort_analisys.swap_Inc << "   |" << std::endl;
-
-        // Сортировка пузырьком
-        sortBubble(masBubble);
-        std::cout << "| Bubble Sort      | " << size << "     | " << sort_analisys.iter_Bubble << "      | " << sort_analisys.srav_Bubble << "     | " << sort_analisys.swap_Bubble << "   |" << std::endl;
-
-        // Быстрая сортировка
-        sort_analisys = {};
-        sortQuick(masQuick, 0, masQuick.size() - 1);
-        std::cout << "| Quick Sort       | " << size << "     | N/A          | " << sort_analisys.srav_directExchange << "     | " << sort_analisys.swap_directExchange << "   |" << std::endl;
-
-        std::cout << "+------------------+--------+--------------+--------------+------------+" << std::endl;
-    }
+    std::vector<int> original20 = createMassiv(20);
+    printTable(original20);
+    std::vector<int> original500 = createMassiv(500);
+    printTable(original500);
+    std::vector<int> original1000 = createMassiv(1000);
+    printTable(original1000);
+    std::vector<int> original10000 = createMassiv(10000);
+    printTable(original10000);
+    
 
     return 0;
 }
